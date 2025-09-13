@@ -100,7 +100,8 @@
 
     <p><a href="https://rsecon25.society-rse.org/">RSECon25</a> has been a treat — both the organizational tracks and
         the technical tracks were really fun. And as always, the hallway track was even better — even though I really
-        have to work on writing down and remembering people's names! Sorry for the folks I didn't recognize from last year :(</p>
+        have to work on writing down and remembering people's names! Sorry for the folks I didn't recognize from last
+        year :(</p>
 
     <p>On the last day, Sam Tygier <a href="https://xkcd.com/356/">Nerd Sniped</a> me — well, he was decent enough to
         not do it on a road crossing. But I consider putting me on a mathematical quest on a drinking / board gaming
@@ -120,7 +121,8 @@
     </blockquote>
 
     <h2>Some Fundamentals</h2>
-    <p>So I got out the paper, pencil, and started to draw some grids and n-grams, and we looked if we can point to an easy
+    <p>So I got out the paper, pencil, and started to draw some grids and n-grams, and we looked if we can point to an
+        easy
         pattern. Very quickly we realized that it gets complicated, and our first algorithms were NP-something, as we
         needed to try out and search a tree with dead-ends. At one moment we were not sure whether it's possible at all,
         so we counted the possible pairs and the number of pairs necessary:</p>
@@ -165,9 +167,10 @@
         </svg>
     </div>
 
-    <p>So I had a pattern to describe the 3 coffee-weeks (<code>A0/A1</code>, <code>B0/B1</code>, <code>C0/C1</code>) with 4 RSEs. 
+    <p>So I had a pattern to describe the 3 coffee-weeks (<code>A0/A1</code>, <code>B0/B1</code>, <code>C0/C1</code>)
+        with 4 RSEs.
         One of the insights was that with <code>N</code>
-        RSEs, there are <code>N-1</code> weeks (duh). 
+        RSEs, there are <code>N-1</code> weeks (duh).
         And if you get an appropriate pattern, like the <code>A0/A1</code>, and rotate it around the
         correct axis, here the vertical one, you can get all pairs for every week.
         I considered an N-dimensional setup of the problem, but quickly
@@ -255,6 +258,24 @@
 
     <div id="solution" class="solution"></div>
 
+    <h2>Another Explanation</h2>
+
+    <p>My brother-in-law, famous mathematician family-dad, pointed out the following explanation,
+        which is technically the same, but easier to put in place:
+    </p>
+    <ol>
+        <li>Put everybody on a long table with <code>N/2</code> seats on each side</li>
+        <li>Discuss, have coffee with your vis-à-vis</li>
+        <li>Rotate everybody by one, <strong>except one person (always the same)</strong></li>
+        <li>Go to 2.</li>
+    </ol>
+
+    <h2>Changelog</h2>
+    <ul>
+        <li>2025-09-12 - Finally found a solution</li>
+        <li>2025-09-13 - Louis Grandjean pointed out a bug, an improvement, and a simpler explanation</li>
+    </ul>
+
     <p class="note">If you find an error in this description, please contact
         <a href="mailto:linus.gasser@epfl.ch">Linus Gasser</a>.
     <p class="note">Thanks for Qwen3-30b to create the nice JavaScript-visualizations...</p>
@@ -264,7 +285,18 @@
     nor me for accepting code that works at least...
     -->
     <script>
-        function drawPolygonWithConnections(canvas, numPoints, connections, rotation = 0) {
+        function numberToHex(n) {
+            return Math.floor(n).toString(16).padStart(2, "0");
+        }
+
+        function gradientColor(fraction) {
+            const r = Math.floor(128 + 127 * Math.sin(fraction * Math.PI * 3));
+            const g = Math.floor(128 + 127 * Math.sin(fraction * Math.PI * 3 + 2 * Math.PI / 3));
+            const b = Math.floor(128 + 127 * Math.sin(fraction * Math.PI * 3 + 4 * Math.PI / 3));
+            return `#${numberToHex(r)}${numberToHex(g)}${numberToHex(b)}`;
+        }
+
+        function drawPolygonWithConnections(canvas, numPoints, connections, rotation = 0, max = 1) {
             const ctx = canvas.getContext('2d');
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
@@ -272,7 +304,7 @@
 
             if (rotation === 0) {
                 // Draw regular polygon
-                ctx.strokeStyle = 'black';
+                ctx.strokeStyle = '#ccf';
                 ctx.beginPath();
                 for (let i = 0; i < numPoints; i++) {
                     const angle = (i * Math.PI * 2) / numPoints - Math.PI / 2;
@@ -290,8 +322,9 @@
                 ctx.fill();
             }
 
-            // Draw red lines for connections
-            ctx.strokeStyle = 'red';
+            // Draw lines for connections, blend from red to green
+            const rgb = numberToHex(Math.pow((max - rotation - 1) / max, 1/3) * 0xe0);
+            ctx.strokeStyle = `#${rgb}${rgb}${rgb}`;
             ctx.lineWidth = 2;
             rotation += Math.ceil(numPoints / 4);
             connections.forEach(([a, b]) => {
@@ -332,7 +365,7 @@
         function drawSolution(rseCount, weekCount) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             for (let week = 0; week < weekCount; week++) {
-                drawPolygonWithConnections(canvas, rseCount - 1, connections[rseCount / 2], week);
+                drawPolygonWithConnections(canvas, rseCount - 1, connections[rseCount / 2], week, weekCount);
             }
         }
 
@@ -363,20 +396,16 @@
 
     <script>
         function calcConnections(totalPairs) {
-            // console.log(`totalPairs: ${totalPairs}`);
             let connections = [];
             let oddEnd = Math.floor(totalPairs / 2) * 2 - 1;
             let evenStart = oddEnd + 1;
             let evenEnd = totalPairs * 2 - 2;
             for (let oddStart = 0; oddStart < oddEnd; oddStart++, oddEnd--) {
-                // console.log(`odd: ${oddStart}..${oddEnd}`);
                 connections.push([oddStart, oddEnd]);
             }
             for (; evenStart < evenEnd; evenStart++, evenEnd--) {
-                // console.log(`even: ${evenStart}..${evenEnd}`);
                 connections.push([evenStart, evenEnd]);
             }
-            // console.log(`middle: ${evenStart}..-1`);
             connections.push([evenStart, -1]);
             return connections;
         }
@@ -387,12 +416,11 @@
         for (let i = 2; i <= 10; i++) {
             connections2.push(calcConnections(i));
         }
-        console.log(JSON.stringify(connections2));
 
         function drawSolution2(rseCount, weekCount) {
             ctx2.clearRect(0, 0, canvas2.width, canvas2.height);
             for (let week = 0; week < weekCount; week++) {
-                drawPolygonWithConnections(canvas2, rseCount - 1, connections2[rseCount / 2], week);
+                drawPolygonWithConnections(canvas2, rseCount - 1, connections2[rseCount / 2], week, weekCount);
             }
         }
 
@@ -432,7 +460,7 @@
             const range = Array.from({ length: n }, (_, i) => i);
             let result = '';
             for (let week = 0; week < n - 1; week++) {
-                const rotated = [...range.slice(week), ...range.slice(0, week)];
+                const rotated = [...range.slice(week, -1), ...range.slice(0, week), n - 1];
                 result += `<p><strong>Week ${week + 1}:</strong> `;
                 let pairs = [];
                 for (let conn of connections) {
